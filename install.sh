@@ -1,29 +1,35 @@
 #!/bin/bash
 ## connect the wifi
-function wifi(){
-read -p "enter the wifi ssid: " wifi_name
-read -p "enter the wifi password:" wifi_password
-iwctl --passphrase $wifi_password station ... connect $wifi_name
-## time
-timedatectl
+function before_chroot(){
+    ## wifi connection
+    read -p "enter the wifi ssid: " wifi_name
+    read -p "enter the wifi password:" wifi_password
+    iwctl --passphrase $wifi_password station ... connect $wifi_name
+    ## time adjustment
+    timedatectl
+    ## some operation to distibute the disk space
+
+    ## mirrorlist
+    sed -i.bak 'd' /etc/pacman.d/mirrorlist
+    mirror = "Server = https://mirrors.ustc.edu.cn/archlinux/\$repo/os/\$arch"
+    cat $mirror > /etc/pacman.d/mirrorlist
+    ## queation what kind of cpu
+    read -p "which is your cpu manufacturer? (amd or intel) " cpu
+    ###------ install some basic software in your new system -----###
+    sed -i.bak 's/SigLevel = Required DatabaseOptional/SigLevel = Never/g' /etc/pacman.conf
+
+    pacstrap -K /mnt base linux linux-firmware vim base-devel $cpu-ucode \
+    btrfs-progs man-db man-pages networkmanager
+
+    ## generate some info of disk distribution
+    genfstab -U /mnt > /mnt/boot/fstab
+    cat /mnt/boot/fstab
+
+    ## enter your new system
+    arch-chroot /mnt    
 }
-## some operation to distibute the disk space
 
-## mirrorlist
-## queation what kind of cpu
-read -p "which is your cpu manufacturer? (amd or intel) " cpu
-###------ install some basic software in your new system -----###
-#TODO:need to trust all
-pacstrap -K /mnt base linux linux-firmware vim base-devel $cpu-ucode \
-btrfs-progs man-db man-pages networkmanager sudo alacritty
-
-## generate some info of disk distribution
-genfstab -U /mnt > /mnt/boot/fstab
-cat /mnt/boot/fstab
-
-## enter your new system
-arch-chroot /mnt
-
+## -------- arch-chroot ------- ## 
 ## for china to change time zone
 ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 hwclock --systohc
@@ -34,9 +40,12 @@ sed -i.bak 's/#zh_CN.UTF-8/zh_CN.UTF-8/g' /etc/locale.gen
 
 locale-gen
 echo 'LANG=en_US.UTF-8' | cat > /etc/locale.conf
-
+# make hostname
 mkdir /etc/hostname
-
+read -p 'what hostname you want? ' hostname
+echo $hostname | cat > /etc/hostname
+# root passwd
+echo 'set the root user password'
 passwd
 
 ## GRUB bootloader
@@ -47,19 +56,17 @@ grub-mkconfig -o /boot/grub/grub.conf
 ## get your usb installer out when operating this 
 reboot
 
-
 ## ---------------------------------------- ##
 ## followings are the operation after reboot
 function build(){
-## user creation
-useradd -m -G wheel -s /bin/bash spriple
-passwd spriple
-# uncomment the sudoers to let wheel can use sudo
-sed -i.bak 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/g' /etc/sudoers
-su spriple
-
-sudo systemctl enable NetworkManager
-systemctl start NetworkManager
+    ## user creation
+    useradd -m -G wheel -s /bin/bash spriple
+    passwd spriple
+    # uncomment the sudoers to let wheel can use sudo
+    sed -i.bak 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/g' /etc/sudoers
+    su spriple
+    sudo systemctl enable NetworkManager
+    systemctl start NetworkManager
 }
 
 
