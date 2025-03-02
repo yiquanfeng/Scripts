@@ -9,15 +9,17 @@ timedatectl
 }
 ## some operation to distibute the disk space
 
+## mirrorlist
 ## queation what kind of cpu
 read -p "which is your cpu manufacturer? (amd or intel) " cpu
 ###------ install some basic software in your new system -----###
-pacstrap -K /mnt base linux linux-firmware vim base-devel $cpu-code \
+#TODO:need to trust all
+pacstrap -K /mnt base linux linux-firmware vim base-devel $cpu-ucode \
 btrfs-progs man-db man-pages networkmanager sudo alacritty
 
 ## generate some info of disk distribution
 genfstab -U /mnt > /mnt/boot/fstab
-cat /mnt/etc/fstab
+cat /mnt/boot/fstab
 
 ## enter your new system
 arch-chroot /mnt
